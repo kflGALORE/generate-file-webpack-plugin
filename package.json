@@ -2,8 +2,9 @@
   "name": "generate-file-webpack-plugin",
   "version": "0.0.1",
   "description": "General purpose Webpack plugin for generating files",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -13,6 +14,8 @@
   "author": "kflGALORE",
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^3.8.3"
+    "@types/webpack": "^4.41.8",
+    "typescript": "^3.8.3",
+    "webpack": "^4.42.1"
   }
 }
