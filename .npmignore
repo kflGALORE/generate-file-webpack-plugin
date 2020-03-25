@@ -1,3 +1,6 @@
 tsconfig.json
 
+*.iml
+.idea/
+
 src/
