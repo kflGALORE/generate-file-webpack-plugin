@@ -1,6 +1,6 @@
 {
   "name": "generate-file-webpack-plugin",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "General purpose Webpack plugin for generating files",
   "main": "lib/index.js",
   "scripts": {
