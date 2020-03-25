@@ -1,0 +1,18 @@
+{
+  "name": "generate-file-webpack-plugin",
+  "version": "0.0.1",
+  "description": "General purpose Webpack plugin for generating files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kflGALORE/generate-file-webpack-plugin.git"
+  },
+  "author": "kflGALORE",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.8.3"
+  }
+}
