@@ -6,17 +6,25 @@ import * as webpack from "webpack";
 import DoneCallback = jest.DoneCallback;
 
 describe('webpack', () => {
-    it('should generate static content', (done) => {
-        test(done, 'generate-static-content');
+    describe('generate static content', () => {
+        it('should generate from string', (done) => {
+            test(done, 'generate-static-content-from-string');
+        });
+
+        it('should generate from buffer', (done) => {
+            test(done, 'generate-static-content-from-buffer');
+        });
     });
+
 });
 
 function test(done: DoneCallback, testCase: string) {
     const testDir = path.resolve(__dirname, 'webpack/' + testCase);
     const expectedOutputDir = path.resolve(testDir, 'expected');
-
     const outputDir = emptyDir(path.resolve(__dirname, '.tmp/webpack/' + testCase));
-    process.env.outputDir = path.resolve(testDir,outputDir);
+
+    process.env.testDir = testDir;
+    process.env.outputDir = outputDir;
 
     const configFile = path.resolve(testDir, 'webpack.config.js');
     const config = require(configFile);
