@@ -8,12 +8,20 @@ export class GenerateFileWebpackPlugin {
 
     public apply(compiler: webpack.Compiler):void {
         compiler.hooks.emit.tap('GenerateFileWebpackPlugin', (compilation, callback) => {
-            const resolvedContent = this.resolveContent();
-            const dir = path.dirname(this.options.file);
-            if (! fs.existsSync(dir)) {
-                fs.mkdirSync(dir, {recursive: true})
+            try {
+                const resolvedContent = this.resolveContent();
+                const dir = path.dirname(this.options.file);
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, {recursive: true})
+                }
+                fs.writeFileSync(this.options.file, resolvedContent);
+            } catch (e) {
+                compilation.errors.push(e);
             }
-            fs.writeFileSync(this.options.file, resolvedContent);
+
+            if (callback) {
+                callback();
+            }
 
             //compilation.getLogger('GenerateFileWebpackPlugin').info()
         });
@@ -25,6 +33,8 @@ export class GenerateFileWebpackPlugin {
             return contentSource as string;
         } else if (typeof contentSource === 'object' && Buffer.isBuffer(contentSource)) {
             return contentSource.toString();
+        } else if (typeof contentSource === 'function') {
+            return contentSource.call();
         } else {
             throw new Error('Unsupported content source: ' + typeof contentSource);
         }

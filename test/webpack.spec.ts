@@ -1,4 +1,3 @@
-//import webpack from 'webpack';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as rimraf from 'rimraf';
@@ -7,16 +6,41 @@ import DoneCallback = jest.DoneCallback;
 
 describe('webpack', () => {
     describe('generate static content', () => {
+        const feature = 'generate-static-content';
+
         it('should generate from string', (done) => {
-            test(done, 'generate-static-content-from-string');
+            test(done, testCase(feature, 'from-string'));
         });
 
         it('should generate from buffer', (done) => {
-            test(done, 'generate-static-content-from-buffer');
+            test(done, testCase(feature, 'from-buffer'));
         });
     });
 
+    describe('generate runtime content', () => {
+        const feature = 'generate-runtime-content';
+
+        it('should generate from function returning a string', (done) => {
+            test(done, testCase(feature,'from-string-function'));
+        });
+
+        it('should generate from function returning a buffer', (done) => {
+            test(done, testCase(feature,'from-buffer-function'));
+        });
+
+        it('should generate from anonymous function', (done) => {
+            test(done, testCase(feature,'from-anonymous-function'));
+        });
+
+        it('should generate from arrow function', (done) => {
+            test(done, testCase(feature,'from-arrow-function'));
+        });
+    });
 });
+
+function testCase(feature: string, scenario: string): string {
+    return feature + '/' + scenario;
+}
 
 function test(done: DoneCallback, testCase: string) {
     const testDir = path.resolve(__dirname, 'webpack/' + testCase);
