@@ -36,19 +36,37 @@ describe('webpack', () => {
             test(done, testCase(feature,'from-arrow-function'));
         });
     });
+
+    describe('relative target file paths', () => {
+        const feature = 'relative-target-file-paths';
+
+        it('should use configured output path', (done) => {
+            test(done, testCase(feature,'with-output-path'));
+        });
+
+        it('should use default output path if no output path is configured', (done) => {
+            const webpackDefaultOutputPath = path.normalize(path.resolve(__dirname, '../dist'));
+            test(done, testCase(feature,'without-output-path'), webpackDefaultOutputPath);
+        });
+
+        it('should use configured output path with relative parent navigation', (done) => {
+            const outputDir = path.resolve(__dirname, '.tmp/webpack/' + feature + '/with-relative-parent-navigation-alt');
+            test(done, testCase(feature,'with-relative-parent-navigation'), outputDir);
+        });
+    });
 });
 
 function testCase(feature: string, scenario: string): string {
     return feature + '/' + scenario;
 }
 
-function test(done: DoneCallback, testCase: string) {
+function test(done: DoneCallback, testCase: string, outputDir?: string) {
     const testDir = path.resolve(__dirname, 'webpack/' + testCase);
     const expectedOutputDir = path.resolve(testDir, 'expected');
-    const outputDir = emptyDir(path.resolve(__dirname, '.tmp/webpack/' + testCase));
+    const actualOutputDir = outputDir? emptyDir(outputDir) : emptyDir(path.resolve(__dirname, '.tmp/webpack/' + testCase));
 
     process.env.testDir = testDir;
-    process.env.outputDir = outputDir;
+    process.env.outputDir = actualOutputDir;
 
     const configFile = path.resolve(testDir, 'webpack.config.js');
     const config = require(configFile);
@@ -64,7 +82,7 @@ function test(done: DoneCallback, testCase: string) {
         try {
             fs.readdirSync(expectedOutputDir).forEach((file) => {
                 const expectedFile = path.resolve(expectedOutputDir, file);
-                const actualFile = path.join(outputDir, file);
+                const actualFile = path.join(actualOutputDir, file);
 
                 try {
                     expect(fs.existsSync(actualFile)).toBe(true);
@@ -77,6 +95,10 @@ function test(done: DoneCallback, testCase: string) {
                     throw new Error('file-content-equals [' + actualFile + '] [' + expectedFile + ']\n' + e.toString());
                 }
             });
+
+            // Cleanup on success
+            deleteDir(actualOutputDir);
+
             done();
         } catch (e) {
             done(e);
@@ -92,10 +114,14 @@ function fileContent(path: string): string | null {
 }
 
 function emptyDir(path: string): string {
-    if (fs.existsSync(path)) {
-        rimraf.sync(path);
-    }
+    deleteDir(path);
     fs.mkdirSync(path, {recursive: true});
 
     return path;
+}
+
+function deleteDir(path: string) {
+    if (fs.existsSync(path)) {
+        rimraf.sync(path);
+    }
 }
