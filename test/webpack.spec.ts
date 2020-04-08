@@ -54,6 +54,14 @@ describe('webpack', () => {
             test(done, testCase(feature,'with-relative-parent-navigation'), outputDir);
         });
     });
+
+    describe('generate promise content', () => {
+        const feature = 'generate-promise-content';
+
+        it('should generate from promise function', (done) => {
+            test(done, testCase(feature,'from-promise-function'));
+        });
+    });
 });
 
 function testCase(feature: string, scenario: string): string {
@@ -79,38 +87,24 @@ function test(done: DoneCallback, testCase: string, outputDir?: string) {
         if (webpackStats.hasErrors()) {
             return done(webpackStats.toString());
         }
-        try {
-            fs.readdirSync(expectedOutputDir).forEach((file) => {
-                const expectedFile = path.resolve(expectedOutputDir, file);
-                const actualFile = path.join(actualOutputDir, file);
 
-                try {
-                    expect(fs.existsSync(actualFile)).toBe(true);
-                } catch (e) {
-                    throw new Error('file-exists [' + actualFile + ']\n' + e.toString());
-                }
-                try {
-                    expect(fileContent(actualFile)).toEqual(fileContent(expectedFile));
-                } catch (e) {
-                    throw new Error('file-content-equals [' + actualFile + '] [' + expectedFile + ']\n' + e.toString());
-                }
-            });
+        fs.readdirSync(expectedOutputDir).forEach((file) => {
+            const expectedFile = path.resolve(expectedOutputDir, file);
+            const actualFile = path.join(actualOutputDir, file);
 
-            // Cleanup on success
-            deleteDir(actualOutputDir);
+            waitForFile(actualFile, 100, 5_000)
+                .then(() => {
+                    expectFile(actualFile)
+                        .toExist()
+                        .toHaveSameContentAs(expectedFile);
 
-            done();
-        } catch (e) {
-            done(e);
-        }
+                    // Cleanup on success
+                    deleteDir(actualOutputDir);
+
+                    done();
+                })
+        });
     });
-}
-
-function fileContent(path: string): string | null {
-    if (! fs.existsSync(path)) {
-        return null;
-    }
-    return fs.readFileSync(path, 'utf-8');
 }
 
 function emptyDir(path: string): string {
@@ -123,5 +117,76 @@ function emptyDir(path: string): string {
 function deleteDir(path: string) {
     if (fs.existsSync(path)) {
         rimraf.sync(path);
+    }
+}
+
+/*
+ * Note: The returned promise will resolve even if the specified file does not exists after the timeout exceeded.
+ */
+function waitForFile(file:string , checkInterval: number, timeout: number): Promise<boolean> {
+    const startTime = Date.now();
+
+    return new Promise((resolve, reject) => {
+        function check() {
+            try {
+                if (fs.existsSync(file)) {
+                    resolve(true);
+                    return;
+                }
+
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime > timeout) {
+                    resolve(false);
+                    return;
+                }
+
+                setTimeout(check, checkInterval);
+            } catch (e) {
+                reject(e);
+            }
+        }
+
+        check();
+    });
+}
+
+function expectFile(file: string): FileExpectations {
+    return new FileExpectations(file);
+}
+
+class FileExpectations {
+    constructor(public actualFile: string) {
+    }
+
+    public toExist(): FileExpectations {
+        try {
+            expect(fs.existsSync(this.actualFile)).toBe(true);
+        } catch (e) {
+            throw this.describe(e, 'to exist');
+        }
+        return this;
+    }
+
+    public toHaveSameContentAs(expectedFile: string): FileExpectations {
+        try {
+            expect(FileExpectations.fileContent(this.actualFile)).toEqual(FileExpectations.fileContent(expectedFile));
+        } catch (e) {
+            throw this.describe(e, 'to have same content as [' + expectedFile + ']');
+        }
+        return this;
+    }
+
+    private describe(e: Error, description: string): Error {
+        e.message =
+            'expected file\n  [' + this.actualFile + ']\n' + description + '\n\n' +
+            'caused by:\n' +  e.message;
+        return e;
+    }
+
+    private static fileContent(path: string): string | null {
+        if (! fs.existsSync(path)) {
+            return null;
+        }
+        return fs.readFileSync(path, 'utf-8');
     }
 }

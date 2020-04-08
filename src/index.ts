@@ -11,16 +11,19 @@ export class GenerateFileWebpackPlugin {
         compiler.hooks.emit.tap('GenerateFileWebpackPlugin', (compilation, callback) => {
             try {
                 const targetFile = this.inferTargetFile(compilation);
-                const resolvedContent = this.resolveContent();
+                // TODO remove: const resolvedContent = this.resolveContent();
+                // TODO this.resolveContent().then(...).catch(...) is better
                 const dir = path.dirname(targetFile);
                 if (!fs.existsSync(dir)) {
                     fs.mkdirSync(dir, {recursive: true})
                 }
-                fs.writeFileSync(targetFile, resolvedContent);
+                this.writeTargetFile(targetFile, this.options.content);
+                // TODO remove: fs.writeFileSync(targetFile, resolvedContent);
             } catch (e) {
                 compilation.errors.push(e);
             }
 
+            // TODO when to invoke callback -> promises?
             if (callback) {
                 callback();
             }
@@ -43,6 +46,31 @@ export class GenerateFileWebpackPlugin {
         }
 
         return path.resolve(outputPath, this.options.file);
+    }
+
+    private writeTargetFile(targetFile: string, contentSource: any) {
+        let content;
+        if (typeof contentSource === 'string' || contentSource instanceof String) {
+            content = contentSource as string;
+        } else if (typeof contentSource === 'object' && Buffer.isBuffer(contentSource)) {
+            content = contentSource.toString();
+        } else if (typeof contentSource === 'function') {
+            content = contentSource.call();
+        } else {
+            throw new Error('Unsupported content source: ' + typeof contentSource);
+        }
+
+        if (typeof content === 'object' && content instanceof Promise) {
+            content
+                .then(resolvedContent => {
+                    fs.writeFileSync(targetFile, resolvedContent);
+                })
+                .catch(err => {
+                    throw err;
+                });
+        } else {
+            fs.writeFileSync(targetFile, content);
+        }
     }
 
     private resolveContent(): string {
