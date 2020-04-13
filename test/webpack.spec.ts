@@ -61,6 +61,10 @@ describe('webpack', () => {
         it('should generate from promise function', (done) => {
             test(done, testCase(feature,'from-promise-function'));
         });
+
+        it('should generate from promise object', (done) => {
+            test(done, testCase(feature,'from-promise-object'));
+        });
     });
 });
 

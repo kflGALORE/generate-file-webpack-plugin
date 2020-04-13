@@ -54,6 +54,8 @@ export class GenerateFileWebpackPlugin {
             content = contentSource as string;
         } else if (typeof contentSource === 'object' && Buffer.isBuffer(contentSource)) {
             content = contentSource.toString();
+        } else if  (typeof contentSource === 'object' && contentSource instanceof Promise) {
+            content = contentSource;
         } else if (typeof contentSource === 'function') {
             content = contentSource.call();
         } else {
