@@ -3,7 +3,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Compilation = webpack.compilation.Compilation;
 
-export class GenerateFileWebpackPlugin {
+export = generate;
+
+function generate(options: Options) {
+    return new GenerateFileWebpackPlugin(options);
+}
+
+class GenerateFileWebpackPlugin {
     private readonly name: string;
 
     public constructor(public options: Options) {

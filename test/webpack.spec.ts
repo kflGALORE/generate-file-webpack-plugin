@@ -67,6 +67,20 @@ describe('webpack', () => {
         });
     });
 
+    describe('simplify usage', () => {
+        const feature = 'simplify-usage';
+
+        it('should generate using original plugin function name', (done) => {
+            test(done, testCase(feature,'simple-import-with-original-name'));
+        });
+        it('should generate using custom plugin function name', (done) => {
+            test(done, testCase(feature,'simple-import-with-custom-name'));
+        });
+        it('should generate using multiple generator configurations', (done) => {
+            test(done, testCase(feature,'multiple-generator-configs'));
+        });
+    });
+
 });
 
 function testCase(feature: string, scenario: string): string {
@@ -100,12 +114,12 @@ function test(done: DoneCallback, testCase: string, outputDir?: string) {
             expectFile(actualFile)
                 .toExist()
                 .toHaveSameContentAs(expectedFile);
-
-            // Cleanup on success
-            deleteDir(actualOutputDir);
-
-            done();
         });
+
+        // Cleanup on success
+        deleteDir(actualOutputDir);
+
+        done();
     });
 }
 
