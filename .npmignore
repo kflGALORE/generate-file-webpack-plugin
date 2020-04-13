@@ -4,3 +4,4 @@ tsconfig.json
 .idea/
 
 src/
+test/

@@ -66,6 +66,7 @@ describe('webpack', () => {
             test(done, testCase(feature,'from-promise-object'));
         });
     });
+
 });
 
 function testCase(feature: string, scenario: string): string {
@@ -96,17 +97,14 @@ function test(done: DoneCallback, testCase: string, outputDir?: string) {
             const expectedFile = path.resolve(expectedOutputDir, file);
             const actualFile = path.join(actualOutputDir, file);
 
-            waitForFile(actualFile, 100, 5_000)
-                .then(() => {
-                    expectFile(actualFile)
-                        .toExist()
-                        .toHaveSameContentAs(expectedFile);
+            expectFile(actualFile)
+                .toExist()
+                .toHaveSameContentAs(expectedFile);
 
-                    // Cleanup on success
-                    deleteDir(actualOutputDir);
+            // Cleanup on success
+            deleteDir(actualOutputDir);
 
-                    done();
-                })
+            done();
         });
     });
 }
@@ -122,36 +120,6 @@ function deleteDir(path: string) {
     if (fs.existsSync(path)) {
         rimraf.sync(path);
     }
-}
-
-/*
- * Note: The returned promise will resolve even if the specified file does not exists after the timeout exceeded.
- */
-function waitForFile(file:string , checkInterval: number, timeout: number): Promise<boolean> {
-    const startTime = Date.now();
-
-    return new Promise((resolve, reject) => {
-        function check() {
-            try {
-                if (fs.existsSync(file)) {
-                    resolve(true);
-                    return;
-                }
-
-                const elapsedTime = Date.now() - startTime;
-                if (elapsedTime > timeout) {
-                    resolve(false);
-                    return;
-                }
-
-                setTimeout(check, checkInterval);
-            } catch (e) {
-                reject(e);
-            }
-        }
-
-        check();
-    });
 }
 
 function expectFile(file: string): FileExpectations {

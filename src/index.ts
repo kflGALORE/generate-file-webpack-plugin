@@ -4,31 +4,29 @@ import * as path from 'path';
 import Compilation = webpack.compilation.Compilation;
 
 export class GenerateFileWebpackPlugin {
+    private readonly name: string;
+
     public constructor(public options: Options) {
+        this.name = 'GenerateFileWebpackPlugin';
     }
 
     public apply(compiler: webpack.Compiler):void {
-        compiler.hooks.emit.tap('GenerateFileWebpackPlugin', (compilation, callback) => {
+        compiler.hooks.emit.tapAsync(this.name, (compilation, callback) => {
             try {
                 const targetFile = this.inferTargetFile(compilation);
-                // TODO remove: const resolvedContent = this.resolveContent();
-                // TODO this.resolveContent().then(...).catch(...) is better
-                const dir = path.dirname(targetFile);
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, {recursive: true})
-                }
-                this.writeTargetFile(targetFile, this.options.content);
-                // TODO remove: fs.writeFileSync(targetFile, resolvedContent);
+                this.resolveContent()
+                    .then(content => {
+                        fs.writeFileSync(targetFile, content);
+                        callback();
+                    })
+                    .catch(e => {
+                        compilation.errors.push(e);
+                        callback();
+                    });
             } catch (e) {
                 compilation.errors.push(e);
-            }
-
-            // TODO when to invoke callback -> promises?
-            if (callback) {
                 callback();
             }
-
-            //compilation.getLogger('GenerateFileWebpackPlugin').info()
         });
     }
 
@@ -48,39 +46,14 @@ export class GenerateFileWebpackPlugin {
         return path.resolve(outputPath, this.options.file);
     }
 
-    private writeTargetFile(targetFile: string, contentSource: any) {
-        let content;
-        if (typeof contentSource === 'string' || contentSource instanceof String) {
-            content = contentSource as string;
-        } else if (typeof contentSource === 'object' && Buffer.isBuffer(contentSource)) {
-            content = contentSource.toString();
-        } else if  (typeof contentSource === 'object' && contentSource instanceof Promise) {
-            content = contentSource;
-        } else if (typeof contentSource === 'function') {
-            content = contentSource.call();
-        } else {
-            throw new Error('Unsupported content source: ' + typeof contentSource);
-        }
-
-        if (typeof content === 'object' && content instanceof Promise) {
-            content
-                .then(resolvedContent => {
-                    fs.writeFileSync(targetFile, resolvedContent);
-                })
-                .catch(err => {
-                    throw err;
-                });
-        } else {
-            fs.writeFileSync(targetFile, content);
-        }
-    }
-
-    private resolveContent(): string {
+    private async resolveContent(): Promise<string> {
         const contentSource = this.options.content;
         if (typeof contentSource === 'string' || contentSource instanceof String) {
             return contentSource as string;
         } else if (typeof contentSource === 'object' && Buffer.isBuffer(contentSource)) {
             return contentSource.toString();
+        } else if  (typeof contentSource === 'object' && contentSource instanceof Promise) {
+            return contentSource;
         } else if (typeof contentSource === 'function') {
             return contentSource.call();
         } else {
