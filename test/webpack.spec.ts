@@ -9,11 +9,11 @@ describe('webpack', () => {
         const feature = 'generate-static-content';
 
         it('should generate from string', (done) => {
-            test(done, testCase(feature, 'from-string'));
+            testSuccess(done, testCase(feature, 'from-string'));
         });
 
         it('should generate from buffer', (done) => {
-            test(done, testCase(feature, 'from-buffer'));
+            testSuccess(done, testCase(feature, 'from-buffer'));
         });
     });
 
@@ -21,19 +21,19 @@ describe('webpack', () => {
         const feature = 'generate-runtime-content';
 
         it('should generate from function returning a string', (done) => {
-            test(done, testCase(feature,'from-string-function'));
+            testSuccess(done, testCase(feature,'from-string-function'));
         });
 
         it('should generate from function returning a buffer', (done) => {
-            test(done, testCase(feature,'from-buffer-function'));
+            testSuccess(done, testCase(feature,'from-buffer-function'));
         });
 
         it('should generate from anonymous function', (done) => {
-            test(done, testCase(feature,'from-anonymous-function'));
+            testSuccess(done, testCase(feature,'from-anonymous-function'));
         });
 
         it('should generate from arrow function', (done) => {
-            test(done, testCase(feature,'from-arrow-function'));
+            testSuccess(done, testCase(feature,'from-arrow-function'));
         });
     });
 
@@ -41,17 +41,17 @@ describe('webpack', () => {
         const feature = 'relative-target-file-paths';
 
         it('should use configured output path', (done) => {
-            test(done, testCase(feature,'with-output-path'));
+            testSuccess(done, testCase(feature,'with-output-path'));
         });
 
         it('should use default output path if no output path is configured', (done) => {
             const webpackDefaultOutputPath = path.normalize(path.resolve(__dirname, '../dist'));
-            test(done, testCase(feature,'without-output-path'), webpackDefaultOutputPath);
+            testSuccess(done, testCase(feature,'without-output-path'), webpackDefaultOutputPath);
         });
 
         it('should use configured output path with relative parent navigation', (done) => {
             const outputDir = path.resolve(__dirname, '.tmp/webpack/' + feature + '/with-relative-parent-navigation-alt');
-            test(done, testCase(feature,'with-relative-parent-navigation'), outputDir);
+            testSuccess(done, testCase(feature,'with-relative-parent-navigation'), outputDir);
         });
     });
 
@@ -59,11 +59,11 @@ describe('webpack', () => {
         const feature = 'generate-promise-content';
 
         it('should generate from promise function', (done) => {
-            test(done, testCase(feature,'from-promise-function'));
+            testSuccess(done, testCase(feature,'from-promise-function'));
         });
 
         it('should generate from promise object', (done) => {
-            test(done, testCase(feature,'from-promise-object'));
+            testSuccess(done, testCase(feature,'from-promise-object'));
         });
     });
 
@@ -71,13 +71,36 @@ describe('webpack', () => {
         const feature = 'simplify-usage';
 
         it('should generate using original plugin function name', (done) => {
-            test(done, testCase(feature,'simple-import-with-original-name'));
+            testSuccess(done, testCase(feature,'simple-import-with-original-name'));
         });
         it('should generate using custom plugin function name', (done) => {
-            test(done, testCase(feature,'simple-import-with-custom-name'));
+            testSuccess(done, testCase(feature,'simple-import-with-custom-name'));
         });
         it('should generate using multiple generator configurations', (done) => {
-            test(done, testCase(feature,'multiple-generator-configs'));
+            testSuccess(done, testCase(feature,'multiple-generator-configs'));
+        });
+    });
+
+    describe('error handling', () => {
+        const feature = 'error-handling';
+
+        it('should fail if input file not found', (done) => {
+            testFailure(done, testCase(feature,'input-file-not-found'),
+                [
+                    'ERROR in \\[GenerateFileWebpackPlugin\\]',
+                    'no such file or directory',
+                    'non-existing-input.txt'
+                ]
+            );
+        });
+
+        it('should fail on unsupported content source', (done) => {
+            testFailure(done, testCase(feature,'unsupported-content-source'),
+                [
+                    'ERROR in \\[GenerateFileWebpackPlugin\\]',
+                    'Unsupported content source:'
+                ]
+            );
         });
     });
 
@@ -87,16 +110,9 @@ function testCase(feature: string, scenario: string): string {
     return feature + '/' + scenario;
 }
 
-function test(done: DoneCallback, testCase: string, outputDir?: string) {
-    const testDir = path.resolve(__dirname, 'webpack/' + testCase);
-    const expectedOutputDir = path.resolve(testDir, 'expected');
-    const actualOutputDir = outputDir? emptyDir(outputDir) : emptyDir(path.resolve(__dirname, '.tmp/webpack/' + testCase));
-
-    process.env.testDir = testDir;
-    process.env.outputDir = actualOutputDir;
-
-    const configFile = path.resolve(testDir, 'webpack.config.js');
-    const config = require(configFile);
+function testSuccess(done: DoneCallback, testCase: string, outputDir?: string) {
+    const testEnv = TestEnv.of(testCase, outputDir);
+    const config = require(testEnv.configFile);
 
     // Run Webpack
     webpack(config, (webpackError, webpackStats) => {
@@ -107,9 +123,9 @@ function test(done: DoneCallback, testCase: string, outputDir?: string) {
             return done(webpackStats.toString());
         }
 
-        fs.readdirSync(expectedOutputDir).forEach((file) => {
-            const expectedFile = path.resolve(expectedOutputDir, file);
-            const actualFile = path.join(actualOutputDir, file);
+        fs.readdirSync(testEnv.expectedOutputDir).forEach((file) => {
+            const expectedFile = path.resolve(testEnv.expectedOutputDir, file);
+            const actualFile = path.join(testEnv.actualOutputDir, file);
 
             expectFile(actualFile)
                 .toExist()
@@ -117,7 +133,29 @@ function test(done: DoneCallback, testCase: string, outputDir?: string) {
         });
 
         // Cleanup on success
-        deleteDir(actualOutputDir);
+        deleteDir(testEnv.actualOutputDir);
+
+        done();
+    });
+}
+
+function testFailure(done: DoneCallback, testCase: string, expectedFailureMessageParts: string[]) {
+    const testEnv = TestEnv.of(testCase);
+    const config = require(testEnv.configFile);
+
+    // Run Webpack
+    webpack(config, (webpackError, webpackStats) => {
+        if (webpackError) {
+            // Even in case of a failure we do NOT expect a Webpack error to occur.
+            // Instead we expect the error to appear in the stats!
+            return done(webpackError);
+        }
+
+        expect(webpackStats.hasErrors()).toBe(true);
+        expect(webpackStats.toString()).toMatch(new RegExp(expectedFailureMessageParts.join('.*') + '.*$', 'm'));
+
+        // Cleanup on success
+        deleteDir(testEnv.actualOutputDir);
 
         done();
     });
@@ -175,4 +213,20 @@ class FileExpectations {
         }
         return fs.readFileSync(path, 'utf-8');
     }
+}
+
+class TestEnv {
+    static of(testCase: string, outputDir?: string): TestEnv {
+        const testDir = path.resolve(__dirname, 'webpack/' + testCase);
+        const expectedOutputDir = path.resolve(testDir, 'expected');
+        const actualOutputDir = outputDir? emptyDir(outputDir) : emptyDir(path.resolve(__dirname, '.tmp/webpack/' + testCase));
+        const configFile = path.resolve(testDir, 'webpack.config.js');
+
+        process.env.testDir = testDir;
+        process.env.outputDir = actualOutputDir;
+
+        return new TestEnv(testDir, expectedOutputDir, actualOutputDir, configFile);
+    }
+
+    constructor(public testDir: string, public expectedOutputDir: string, public actualOutputDir: string, public configFile: string) {}
 }

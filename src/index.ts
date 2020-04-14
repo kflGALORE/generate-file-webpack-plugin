@@ -16,6 +16,7 @@ class GenerateFileWebpackPlugin {
         this.name = 'GenerateFileWebpackPlugin';
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public apply(compiler: webpack.Compiler):void {
         compiler.hooks.emit.tapAsync(this.name, (compilation, callback) => {
             try {
@@ -26,11 +27,11 @@ class GenerateFileWebpackPlugin {
                         callback();
                     })
                     .catch(e => {
-                        compilation.errors.push(e);
+                        this.fail(compilation, e);
                         callback();
                     });
             } catch (e) {
-                compilation.errors.push(e);
+                this.fail(compilation, e);
                 callback();
             }
         });
@@ -42,10 +43,12 @@ class GenerateFileWebpackPlugin {
         }
 
         if (! compilation.compiler.outputPath) {
+            // This should never occur in real-life - we catch that case anyways, just because of paranoia
             throw new Error('Could not infer target file path: No webpack output path configured.');
         }
         const outputPath = compilation.compiler.outputPath;
         if (! path.isAbsolute(outputPath)) {
+            // This should never occur in real-life - we catch that case anyways, just because of paranoia
             throw new Error('Could not infer target file path: Configured webpack output path is not an absolute path.');
         }
 
@@ -65,6 +68,10 @@ class GenerateFileWebpackPlugin {
         } else {
             throw new Error('Unsupported content source: ' + typeof contentSource);
         }
+    }
+
+    private fail(compilation: Compilation, e: Error): void {
+        compilation.errors.push(new Error('[' + this.name + '] ' + e.message));
     }
 }
 
