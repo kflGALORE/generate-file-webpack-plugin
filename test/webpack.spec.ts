@@ -87,7 +87,7 @@ describe('webpack', () => {
         it('should fail if input file not found', (done) => {
             testFailure(done, testCase(feature,'input-file-not-found'),
                 [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\]',
+                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
                     'no such file or directory',
                     'non-existing-input.txt'
                 ]
@@ -97,8 +97,35 @@ describe('webpack', () => {
         it('should fail on unsupported content source', (done) => {
             testFailure(done, testCase(feature,'unsupported-content-source'),
                 [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\]',
-                    'Unsupported content source:'
+                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                    'Unsupported content source: URL'
+                ]
+            );
+        });
+
+        it('should fail on function with unsupported content source', (done) => {
+            testFailure(done, testCase(feature,'unsupported-content-source-function'),
+                [
+                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                    'Unsupported function content source: URL'
+                ]
+            );
+        });
+
+        it('should fail on error executing content function', (done) => {
+            testFailure(done, testCase(feature,'content-function-error'),
+                [
+                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                    'error while executing content function'
+                ]
+            );
+        });
+
+        it('should fail on content promise rejection', (done) => {
+            testFailure(done, testCase(feature,'content-promise-rejected'),
+                [
+                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                    'promise rejected'
                 ]
             );
         });

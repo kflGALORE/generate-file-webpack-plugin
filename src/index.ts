@@ -27,7 +27,7 @@ class GenerateFileWebpackPlugin {
                         callback();
                     })
                     .catch(e => {
-                        this.fail(compilation, e);
+                        this.fail(compilation, e, targetFile);
                         callback();
                     });
             } catch (e) {
@@ -57,21 +57,57 @@ class GenerateFileWebpackPlugin {
 
     private async resolveContent(): Promise<string> {
         const contentSource = this.options.content;
-        if (typeof contentSource === 'string' || contentSource instanceof String) {
+        if (isString(contentSource)) {
             return contentSource as string;
-        } else if (typeof contentSource === 'object' && Buffer.isBuffer(contentSource)) {
+        } else if (isBuffer(contentSource)) {
             return contentSource.toString();
-        } else if  (typeof contentSource === 'object' && contentSource instanceof Promise) {
+        } else if  (isPromise(contentSource)) {
             return contentSource;
-        } else if (typeof contentSource === 'function') {
-            return contentSource.call();
+        } else if (isFunction(contentSource)) {
+            const functionResult =  contentSource.call();
+            if (! isString(functionResult) && ! isBuffer(functionResult) && ! isPromise(functionResult)) {
+                throw new Error('Unsupported function content source: ' + typeNameOf(functionResult));
+            }
+            return functionResult;
         } else {
-            throw new Error('Unsupported content source: ' + typeof contentSource);
+            throw new Error('Unsupported content source: ' + typeNameOf(contentSource));
         }
     }
 
-    private fail(compilation: Compilation, e: Error): void {
-        compilation.errors.push(new Error('[' + this.name + '] ' + e.message));
+    private fail(compilation: Compilation, e: any, targetFile?: string): void {
+        const errorMessage = e instanceof Error? e.message : e.toString();
+
+        let message = '[' + this.name + '] ';
+        if (targetFile) {
+            message = message + '[' + path.basename(targetFile) + '] ';
+        }
+        message = message + errorMessage;
+
+        compilation.errors.push(new Error(message));
+    }
+}
+
+function isString(value: any): boolean {
+    return typeof value === 'string' || value instanceof String;
+}
+
+function isBuffer(value: any): boolean {
+    return typeof value === 'object' && Buffer.isBuffer(value);
+}
+
+function isPromise(value: any): boolean {
+    return typeof value === 'object' && value instanceof Promise;
+}
+
+function isFunction(value: any): boolean {
+    return typeof value === 'function';
+}
+
+function typeNameOf(value: any): string {
+    if (typeof value === 'object') {
+        return value.constructor.name;
+    } else {
+        return typeof value;
     }
 }
 
