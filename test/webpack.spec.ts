@@ -141,6 +141,8 @@ function testSuccess(done: DoneCallback, testCase: string, outputDir?: string) {
     const testEnv = TestEnv.of(testCase, outputDir);
     const config = require(testEnv.configFile);
 
+    testEnv.cleanup();
+
     // Run Webpack
     webpack(config, (webpackError, webpackStats) => {
         if (webpackError) {
@@ -160,7 +162,7 @@ function testSuccess(done: DoneCallback, testCase: string, outputDir?: string) {
         });
 
         // Cleanup on success
-        deleteDir(testEnv.actualOutputDir);
+        testEnv.cleanup();
 
         done();
     });
@@ -169,6 +171,8 @@ function testSuccess(done: DoneCallback, testCase: string, outputDir?: string) {
 function testFailure(done: DoneCallback, testCase: string, expectedFailureMessageParts: string[]) {
     const testEnv = TestEnv.of(testCase);
     const config = require(testEnv.configFile);
+
+    testEnv.cleanup();
 
     // Run Webpack
     webpack(config, (webpackError, webpackStats) => {
@@ -182,23 +186,10 @@ function testFailure(done: DoneCallback, testCase: string, expectedFailureMessag
         expect(webpackStats.toString()).toMatch(new RegExp(expectedFailureMessageParts.join('.*') + '.*$', 'm'));
 
         // Cleanup on success
-        deleteDir(testEnv.actualOutputDir);
+        testEnv.cleanup();
 
         done();
     });
-}
-
-function emptyDir(path: string): string {
-    deleteDir(path);
-    fs.mkdirSync(path, {recursive: true});
-
-    return path;
-}
-
-function deleteDir(path: string) {
-    if (fs.existsSync(path)) {
-        rimraf.sync(path);
-    }
 }
 
 function expectFile(file: string): FileExpectations {
@@ -246,7 +237,7 @@ class TestEnv {
     static of(testCase: string, outputDir?: string): TestEnv {
         const testDir = path.resolve(__dirname, 'webpack/' + testCase);
         const expectedOutputDir = path.resolve(testDir, 'expected');
-        const actualOutputDir = outputDir? emptyDir(outputDir) : emptyDir(path.resolve(__dirname, '.tmp/webpack/' + testCase));
+        const actualOutputDir = outputDir? outputDir : path.resolve(__dirname, '.tmp/webpack/' + testCase);
         const configFile = path.resolve(testDir, 'webpack.config.js');
 
         process.env.testDir = testDir;
@@ -256,4 +247,10 @@ class TestEnv {
     }
 
     constructor(public testDir: string, public expectedOutputDir: string, public actualOutputDir: string, public configFile: string) {}
+
+    cleanup() {
+        if (fs.existsSync(this.actualOutputDir)) {
+            rimraf.sync(this.actualOutputDir);
+        }
+    }
 }

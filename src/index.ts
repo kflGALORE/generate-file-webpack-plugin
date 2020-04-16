@@ -23,6 +23,10 @@ class GenerateFileWebpackPlugin {
                 const targetFile = this.inferTargetFile(compilation);
                 this.resolveContent()
                     .then(content => {
+                        const targetDir = path.dirname(targetFile);
+                        if (! fs.existsSync(targetDir)) {
+                            fs.mkdirSync(targetDir, {recursive: true});
+                        }
                         fs.writeFileSync(targetFile, content);
                         callback();
                     })
