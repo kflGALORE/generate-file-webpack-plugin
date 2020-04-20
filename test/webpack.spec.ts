@@ -9,11 +9,11 @@ describe('webpack', () => {
         const feature = 'generate-static-content';
 
         it('should generate from string', (done) => {
-            testSuccess(done, testCase(feature, 'from-string'));
+            test(done, feature, 'from-string', success());
         });
 
         it('should generate from buffer', (done) => {
-            testSuccess(done, testCase(feature, 'from-buffer'));
+            test(done, feature, 'from-buffer', success());
         });
     });
 
@@ -21,19 +21,19 @@ describe('webpack', () => {
         const feature = 'generate-runtime-content';
 
         it('should generate from function returning a string', (done) => {
-            testSuccess(done, testCase(feature,'from-string-function'));
+            test(done, feature, 'from-string-function', success());
         });
 
         it('should generate from function returning a buffer', (done) => {
-            testSuccess(done, testCase(feature,'from-buffer-function'));
+            test(done, feature, 'from-buffer-function', success());
         });
 
         it('should generate from anonymous function', (done) => {
-            testSuccess(done, testCase(feature,'from-anonymous-function'));
+            test(done, feature, 'from-anonymous-function', success());
         });
 
         it('should generate from arrow function', (done) => {
-            testSuccess(done, testCase(feature,'from-arrow-function'));
+            test(done, feature, 'from-arrow-function', success());
         });
     });
 
@@ -41,17 +41,23 @@ describe('webpack', () => {
         const feature = 'relative-target-file-paths';
 
         it('should use configured output path', (done) => {
-            testSuccess(done, testCase(feature,'with-output-path'));
+            test(done, feature, 'with-output-path', success());
         });
 
         it('should use default output path if no output path is configured', (done) => {
             const webpackDefaultOutputPath = path.normalize(path.resolve(__dirname, '../dist'));
-            testSuccess(done, testCase(feature,'without-output-path'), webpackDefaultOutputPath);
+            test(done, feature, 'without-output-path', {
+                result: TestResult.Success,
+                outputDir: webpackDefaultOutputPath
+            });
         });
 
         it('should use configured output path with relative parent navigation', (done) => {
             const outputDir = path.resolve(__dirname, '.tmp/webpack/' + feature + '/with-relative-parent-navigation-alt');
-            testSuccess(done, testCase(feature,'with-relative-parent-navigation'), outputDir);
+            test(done, feature, 'with-relative-parent-navigation', {
+                result: TestResult.Success,
+                outputDir: outputDir
+            });
         });
     });
 
@@ -59,11 +65,11 @@ describe('webpack', () => {
         const feature = 'generate-promise-content';
 
         it('should generate from promise function', (done) => {
-            testSuccess(done, testCase(feature,'from-promise-function'));
+            test(done, feature, 'from-promise-function', success());
         });
 
         it('should generate from promise object', (done) => {
-            testSuccess(done, testCase(feature,'from-promise-object'));
+            test(done, feature, 'from-promise-object', success());
         });
     });
 
@@ -71,13 +77,13 @@ describe('webpack', () => {
         const feature = 'simplify-usage';
 
         it('should generate using original plugin function name', (done) => {
-            testSuccess(done, testCase(feature,'simple-import-with-original-name'));
+            test(done, feature, 'simple-import-with-original-name', success());
         });
         it('should generate using custom plugin function name', (done) => {
-            testSuccess(done, testCase(feature,'simple-import-with-custom-name'));
+            test(done, feature, 'simple-import-with-custom-name', success());
         });
         it('should generate using multiple generator configurations', (done) => {
-            testSuccess(done, testCase(feature,'multiple-generator-configs'));
+            test(done, feature, 'multiple-generator-configs', success());
         });
     });
 
@@ -85,49 +91,64 @@ describe('webpack', () => {
         const feature = 'error-handling';
 
         it('should fail if input file not found', (done) => {
-            testFailure(done, testCase(feature,'input-file-not-found'),
-                [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
-                    'no such file or directory',
-                    'non-existing-input.txt'
+            test(done, feature, 'input-file-not-found', {
+                result: TestResult.Failure,
+                expectedMessages: [
+                    [
+                        'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                        'no such file or directory',
+                        'non-existing-input.txt'
+                    ]
                 ]
-            );
+            });
         });
 
         it('should fail on unsupported content source', (done) => {
-            testFailure(done, testCase(feature,'unsupported-content-source'),
-                [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
-                    'Unsupported content source: URL'
+            test(done, feature, 'unsupported-content-source', {
+                result: TestResult.Failure,
+                expectedMessages: [
+                    [
+                        'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                        'Unsupported content source: URL'
+                    ]
                 ]
-            );
+            });
         });
 
         it('should fail on function with unsupported content source', (done) => {
-            testFailure(done, testCase(feature,'unsupported-content-source-function'),
-                [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
-                    'Unsupported function content source: URL'
+            test(done, feature, 'unsupported-content-source-function', {
+                result: TestResult.Failure,
+                expectedMessages: [
+                    [
+                        'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                        'Unsupported function content source: URL'
+                    ]
                 ]
-            );
+            });
         });
 
         it('should fail on error executing content function', (done) => {
-            testFailure(done, testCase(feature,'content-function-error'),
-                [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
-                    'error while executing content function'
+            test(done, feature, 'content-function-error', {
+                result: TestResult.Failure,
+                expectedMessages: [
+                    [
+                        'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                        'error while executing content function'
+                    ]
                 ]
-            );
+            });
         });
 
         it('should fail on content promise rejection', (done) => {
-            testFailure(done, testCase(feature,'content-promise-rejected'),
-                [
-                    'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
-                    'promise rejected'
+            test(done, feature, 'content-promise-rejected', {
+                result: TestResult.Failure,
+                expectedMessages: [
+                    [
+                        'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
+                        'promise rejected'
+                    ]
                 ]
-            );
+            });
         });
     });
 
@@ -137,8 +158,8 @@ function testCase(feature: string, scenario: string): string {
     return feature + '/' + scenario;
 }
 
-function testSuccess(done: DoneCallback, testCase: string, outputDir?: string) {
-    const testEnv = TestEnv.of(testCase, outputDir);
+function test(done: DoneCallback, feature: string, scenario: string, spec: TestSpec) {
+    const testEnv = TestEnv.of(testCase(feature, scenario), spec.outputDir);
     const config = require(testEnv.configFile);
 
     testEnv.cleanup();
@@ -148,48 +169,57 @@ function testSuccess(done: DoneCallback, testCase: string, outputDir?: string) {
         if (webpackError) {
             return done(webpackError);
         }
-        if (webpackStats.hasErrors()) {
-            return done(webpackStats.toString());
+
+        switch (spec.result) {
+            case TestResult.Failure: {
+                expect(webpackStats.hasErrors()).toBe(true);
+                if (spec.expectedMessages) {
+                    const webpackStatsString = webpackStats.toString();
+                    spec.expectedMessages.forEach(expectedMessageParts => {
+                        expect(webpackStatsString).toMatch(new RegExp(expectedMessageParts.join('.*') + '.*$', 'm'));
+                    });
+                }
+                break;
+            }
+            case TestResult.Success: {
+                fs.readdirSync(testEnv.expectedOutputDir).forEach((file) => {
+                    const expectedFile = path.resolve(testEnv.expectedOutputDir, file);
+                    const actualFile = path.join(testEnv.actualOutputDir, file);
+
+                    expectFile(actualFile)
+                        .toExist()
+                        .toHaveSameContentAs(expectedFile);
+                    if (spec.expectedMessages) {
+                        const webpackStatsString = webpackStats.toString();
+                        spec.expectedMessages.forEach(expectedMessageParts => {
+                            expect(webpackStatsString).toMatch(new RegExp(expectedMessageParts.join('.*') + '.*$', 'm'));
+                        });
+                    }
+                });
+                break;
+            }
         }
 
-        fs.readdirSync(testEnv.expectedOutputDir).forEach((file) => {
-            const expectedFile = path.resolve(testEnv.expectedOutputDir, file);
-            const actualFile = path.join(testEnv.actualOutputDir, file);
-
-            expectFile(actualFile)
-                .toExist()
-                .toHaveSameContentAs(expectedFile);
-        });
-
-        // Cleanup on success
         testEnv.cleanup();
-
         done();
     });
 }
 
-function testFailure(done: DoneCallback, testCase: string, expectedFailureMessageParts: string[]) {
-    const testEnv = TestEnv.of(testCase);
-    const config = require(testEnv.configFile);
+function success(): TestSpec {
+    return {
+        result: TestResult.Success
+    }
+}
 
-    testEnv.cleanup();
+interface TestSpec {
+    result: TestResult;
+    outputDir?: string;
+    expectedMessages?: string[][];
+}
 
-    // Run Webpack
-    webpack(config, (webpackError, webpackStats) => {
-        if (webpackError) {
-            // Even in case of a failure we do NOT expect a Webpack error to occur.
-            // Instead we expect the error to appear in the stats!
-            return done(webpackError);
-        }
-
-        expect(webpackStats.hasErrors()).toBe(true);
-        expect(webpackStats.toString()).toMatch(new RegExp(expectedFailureMessageParts.join('.*') + '.*$', 'm'));
-
-        // Cleanup on success
-        testEnv.cleanup();
-
-        done();
-    });
+enum TestResult {
+    Success,
+    Failure
 }
 
 function expectFile(file: string): FileExpectations {
@@ -221,12 +251,12 @@ class FileExpectations {
     private describe(e: Error, description: string): Error {
         e.message =
             'expected file\n  [' + this.actualFile + ']\n' + description + '\n\n' +
-            'caused by:\n' +  e.message;
+            'caused by:\n' + e.message;
         return e;
     }
 
     private static fileContent(path: string): string | null {
-        if (! fs.existsSync(path)) {
+        if (!fs.existsSync(path)) {
             return null;
         }
         return fs.readFileSync(path, 'utf-8');
@@ -237,7 +267,7 @@ class TestEnv {
     static of(testCase: string, outputDir?: string): TestEnv {
         const testDir = path.resolve(__dirname, 'webpack/' + testCase);
         const expectedOutputDir = path.resolve(testDir, 'expected');
-        const actualOutputDir = outputDir? outputDir : path.resolve(__dirname, '.tmp/webpack/' + testCase);
+        const actualOutputDir = outputDir ? outputDir : path.resolve(__dirname, '.tmp/webpack/' + testCase);
         const configFile = path.resolve(testDir, 'webpack.config.js');
 
         process.env.testDir = testDir;
@@ -246,7 +276,8 @@ class TestEnv {
         return new TestEnv(testDir, expectedOutputDir, actualOutputDir, configFile);
     }
 
-    constructor(public testDir: string, public expectedOutputDir: string, public actualOutputDir: string, public configFile: string) {}
+    constructor(public testDir: string, public expectedOutputDir: string, public actualOutputDir: string, public configFile: string) {
+    }
 
     cleanup() {
         if (fs.existsSync(this.actualOutputDir)) {
