@@ -244,9 +244,13 @@ function test(done: DoneCallback, feature: string, scenario: string, spec: TestS
         }
 
         if (spec.expectedMessages || spec.unwantedMessages) {
+            let consoleMessages: string[] = [];
+            consoleSpy.mock.calls.forEach(call => {
+                consoleMessages.push(call[0].toString());
+            });
+
             const actualMessages =
-                // @ts-ignore
-                consoleSpy.mock.calls.flat(1).join('\n')
+                consoleMessages.join('\n')
                     .concat('\n')
                     .concat(webpackStats.toString());
 
