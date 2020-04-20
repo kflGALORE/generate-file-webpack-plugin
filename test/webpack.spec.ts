@@ -106,7 +106,7 @@ describe('webpack', () => {
         it('should fail on unsupported content source', (done) => {
             test(done, feature, 'unsupported-content-source', {
                 result: TestResult.Failure,
-                expectedMessages: [
+                expectedMessages:[
                     [
                         'ERROR in \\[GenerateFileWebpackPlugin\\] \\[output.txt\\]',
                         'Unsupported content source: URL'
@@ -152,6 +152,56 @@ describe('webpack', () => {
         });
     });
 
+    describe('logging', () => {
+        const feature = 'logging';
+
+        it('should log generated file only per default', (done) => {
+            test(done, feature, 'default',  {
+                result: TestResult.Success,
+                expectedMessages: [
+                    ['\\[GenerateFileWebpackPlugin\\] \\[output.txt\\] \\[generated\\]']
+                ],
+                unwantedMessages: [
+                    ['\\[GenerateFileWebpackPlugin\\] \\[created\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[called\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[emit.tapAsync\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[output.txt\\] \\[generating\\]']
+                ],
+                ignoreOutput: true
+            });
+        });
+
+        it('should log generated file only if debug is disabled', (done) => {
+            test(done, feature, 'debug-disabled',  {
+                result: TestResult.Success,
+                expectedMessages: [
+                    ['\\[GenerateFileWebpackPlugin\\] \\[output.txt\\] \\[generated\\]']
+                ],
+                unwantedMessages: [
+                    ['\\[GenerateFileWebpackPlugin\\] \\[created\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[called\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[emit.tapAsync\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[output.txt\\] \\[generating\\]']
+                ],
+                ignoreOutput: true
+            });
+        });
+
+        it('should log full lifecycle if debug is enabled', (done) => {
+            test(done, feature, 'debug-enabled',  {
+                result: TestResult.Success,
+                expectedMessages:  [
+                    ['\\[GenerateFileWebpackPlugin\\] \\[created\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[called\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[emit.tapAsync\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[output.txt\\] \\[generating\\]'],
+                    ['\\[GenerateFileWebpackPlugin\\] \\[output.txt\\] \\[generated\\]']
+                ],
+                ignoreOutput: true
+            });
+        });
+    });
+
 });
 
 function testCase(feature: string, scenario: string): string {
@@ -159,6 +209,9 @@ function testCase(feature: string, scenario: string): string {
 }
 
 function test(done: DoneCallback, feature: string, scenario: string, spec: TestSpec) {
+    const consoleSpy = jest.spyOn(console, 'info');
+    consoleSpy.mockReset();
+
     const testEnv = TestEnv.of(testCase(feature, scenario), spec.outputDir);
     const config = require(testEnv.configFile);
 
@@ -173,30 +226,39 @@ function test(done: DoneCallback, feature: string, scenario: string, spec: TestS
         switch (spec.result) {
             case TestResult.Failure: {
                 expect(webpackStats.hasErrors()).toBe(true);
-                if (spec.expectedMessages) {
-                    const webpackStatsString = webpackStats.toString();
-                    spec.expectedMessages.forEach(expectedMessageParts => {
-                        expect(webpackStatsString).toMatch(new RegExp(expectedMessageParts.join('.*') + '.*$', 'm'));
+                break;
+            }
+            case TestResult.Success: {
+                if (! spec.ignoreOutput) {
+                    fs.readdirSync(testEnv.expectedOutputDir).forEach((file) => {
+                        const expectedFile = path.resolve(testEnv.expectedOutputDir, file);
+                        const actualFile = path.join(testEnv.actualOutputDir, file);
+
+                        expectFile(actualFile)
+                            .toExist()
+                            .toHaveSameContentAs(expectedFile);
                     });
                 }
                 break;
             }
-            case TestResult.Success: {
-                fs.readdirSync(testEnv.expectedOutputDir).forEach((file) => {
-                    const expectedFile = path.resolve(testEnv.expectedOutputDir, file);
-                    const actualFile = path.join(testEnv.actualOutputDir, file);
+        }
 
-                    expectFile(actualFile)
-                        .toExist()
-                        .toHaveSameContentAs(expectedFile);
-                    if (spec.expectedMessages) {
-                        const webpackStatsString = webpackStats.toString();
-                        spec.expectedMessages.forEach(expectedMessageParts => {
-                            expect(webpackStatsString).toMatch(new RegExp(expectedMessageParts.join('.*') + '.*$', 'm'));
-                        });
-                    }
+        if (spec.expectedMessages || spec.unwantedMessages) {
+            const actualMessages =
+                // @ts-ignore
+                consoleSpy.mock.calls.flat(1).join('\n')
+                    .concat('\n')
+                    .concat(webpackStats.toString());
+
+            if (spec.expectedMessages) {
+                spec.expectedMessages.forEach(expectedMessageParts => {
+                    expect(actualMessages).toMatch(new RegExp(expectedMessageParts.join('.*') + '.*$', 'm'));
                 });
-                break;
+            }
+            if (spec.unwantedMessages) {
+                spec.unwantedMessages.forEach(unwantedMessageParts => {
+                    expect(actualMessages).not.toMatch(new RegExp(unwantedMessageParts.join('.*') + '.*$', 'm'));
+                });
             }
         }
 
@@ -214,7 +276,9 @@ function success(): TestSpec {
 interface TestSpec {
     result: TestResult;
     outputDir?: string;
+    ignoreOutput?: boolean;
     expectedMessages?: string[][];
+    unwantedMessages?: string[][];
 }
 
 enum TestResult {

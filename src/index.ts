@@ -1,4 +1,5 @@
 import * as webpack from "webpack";
+import {Logger} from "webpack";
 import * as fs from 'fs';
 import * as path from 'path';
 import Compilation = webpack.compilation.Compilation;
@@ -14,13 +15,18 @@ class GenerateFileWebpackPlugin {
 
     public constructor(public options: Options) {
         this.name = 'GenerateFileWebpackPlugin';
+        this.debug(null, '[created]');
     }
 
     // noinspection JSUnusedGlobalSymbols
     public apply(compiler: webpack.Compiler):void {
+        this.debug(null, '[called]');
         compiler.hooks.emit.tapAsync(this.name, (compilation, callback) => {
+            this.debug(compilation, '[emit.tapAsync]');
             try {
                 const targetFile = this.inferTargetFile(compilation);
+
+                this.debug(compilation, '[generating]', targetFile);
                 this.resolveContent()
                     .then(content => {
                         const targetDir = path.dirname(targetFile);
@@ -28,6 +34,7 @@ class GenerateFileWebpackPlugin {
                             fs.mkdirSync(targetDir, {recursive: true});
                         }
                         fs.writeFileSync(targetFile, content);
+                        this.info(compilation, '[generated]', targetFile);
                         callback();
                     })
                     .catch(e => {
@@ -89,6 +96,31 @@ class GenerateFileWebpackPlugin {
 
         compilation.errors.push(new Error(message));
     }
+
+    private debug(compilation: Compilation|null, logMessage: string, targetFile?: string) {
+        if (! this.options.debug) {
+            return;
+        }
+        this.getLogger(compilation).info(this.message(logMessage, targetFile));
+    }
+
+    private info(compilation: Compilation, logMessage: string, targetFile?: string) {
+        this.getLogger(compilation).info(this.message(logMessage, targetFile));
+    }
+
+    private getLogger(compilation: Compilation|null): Logger|Console {
+        return compilation && compilation.getLogger ? compilation.getLogger(this.name) : console;
+    }
+
+    private message(logMessage: string, targetFile?: string): string {
+        let message = '[' + this.name + '] ';
+        if (targetFile) {
+            message = message + '[' + path.basename(targetFile) + '] ';
+        }
+        message = message + logMessage;
+
+        return message;
+    }
 }
 
 function isString(value: any): boolean {
@@ -118,4 +150,5 @@ function typeNameOf(value: any): string {
 interface Options {
     file: string;
     content: any;
+    debug?: boolean
 }
