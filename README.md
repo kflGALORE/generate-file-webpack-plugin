@@ -6,13 +6,25 @@
 # generate-file-webpack-plugin
 General purpose Webpack plugin for generating files.
 
+* [Getting Started](#getting-started)
+    * [Requirements](#getting-started--requirements)
+    * [Install](#getting-started--install)
+    * [Usage](#getting-started--usage)
+* [Configuration](#configuration)
+    * [file](#configuration--file)
+    * [content](#configuration--content)
+    * [debug](#configuration--debug)
+* [Examples](#examples)
+
+<a name="getting-started"></a>
 ## Getting Started
 
+<a name="getting-started--requirements"></a>
 ### Requirements
 
 * Webpack 4.x
   * Earlier version of Webpack probably won't work.
-  * Latest version 5.x may work, but has been tested.
+  * Latest version 5.x may work, but has not been tested.
   
 * Node.js 12.x
   * Earlier versions may also work, but have not been tested.
@@ -22,6 +34,7 @@ General purpose Webpack plugin for generating files.
   * Earlier versions may also work, but have not been tested.
   * Later versions most probably also work, but have not been tested.
 
+<a name="getting-started--install"></a>
 ### Install
 
 Using npm:
@@ -36,7 +49,7 @@ Even if not been tested yet, installation using [yarn](https://classic.yarnpkg.c
  yarn add generate-file-webpack-plugin --dev
  ```
 
-
+<a name="getting-started--usage"></a>
 ### Usage
 
 **webpack.config.js**
@@ -54,8 +67,10 @@ module.exports = {
 };
 ```
 
-Running `webpack` via your preferred method will generated a file named `output.txt` in your root output directory.
+Running `webpack` via your preferred method will generate a file named `output.txt` in your root output directory with
+the content `Hello World`.
 
+<a name="configuration"></a>
 ## Configuration
 
 **webpack.config.js**
@@ -72,6 +87,7 @@ module.exports = {
 
 Thereby, `options` is the main configuration object for this plugin, supporting the following properties:
 
+<a name="configuration--file"></a>
 #### `file`
 
 The file that is to be generated. 
@@ -83,6 +99,7 @@ This may either be a relative or an absolute file path. In case it is a relative
 * required: true
 * since: 1.0.0
 
+<a name="configuration--content"></a>
 #### `content`
 
 The content to be written into the specified `file`. 
@@ -100,6 +117,7 @@ of the aforementioned types.
 * required: true
 * since: 1.0.0
 
+<a name="configuration--debug"></a>
 #### `debug`
 
 Flag, indicating if additional debug output should be logged.
@@ -109,6 +127,7 @@ Flag, indicating if additional debug output should be logged.
 * default: `false`
 * since: 1.0.0
 
+<a name="examples"></a>
 ## Examples
 
 This is still work-in-progress. _Do not use, yet_.
