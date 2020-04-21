@@ -4,6 +4,8 @@
 [![dev-dependencies](https://david-dm.org/kflGALORE/generate-file-webpack-plugin/dev-status.svg)](https://david-dm.org/kflGALORE/generate-file-webpack-plugin#info=devDependencies)
 
 # generate-file-webpack-plugin
+**This is still work-in-progress. _Do not use, yet_**.
+
 General purpose Webpack plugin for generating files.
 
 * [Getting Started](#getting-started)
@@ -130,4 +132,23 @@ Flag, indicating if additional debug output should be logged.
 <a name="examples"></a>
 ## Examples
 
-This is still work-in-progress. _Do not use, yet_.
+### Copy File
+
+Given, you have a `file my-file.txt` in your `src` directory. Then you can copy that file into webpack's default output
+directory like this:
+
+```javascript
+const fs = require('fs');
+const generate = require('generate-file-webpack-plugin');
+
+module.exports = {
+    // ...
+    plugins: [
+       generate({
+            file: 'my-file.txt',
+            content:  fs.readFileSync(path.resolve(__dirname, 'src/my-file.txt'))
+        })
+    ]
+};
+```
+
