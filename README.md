@@ -19,7 +19,9 @@ General purpose Webpack plugin for generating files.
 * [Examples](#examples)
     * [Copy File](#examples--copy-file)
     * [Generate Application Info](#examples--generate-app-info)
+    * [Generate Multiple Files](#examples--generate-multiple-files)
 * [Known Problems](#known-problems)
+
 
 <a name="getting-started"></a>
 ## Getting Started
@@ -266,7 +268,7 @@ const { execSync } = require('child_process');
 const generate = require('generate-file-webpack-plugin');
 
 module.exports = {
-    entry: path.resolve(__dirname, 'src/index.js'),
+    // ...
     plugins: [
         generate({
             file: 'app-info.js',
@@ -283,6 +285,30 @@ module.exports = {
     ]
 };
 ```
+
+<a name="examples--generate-multiple-files"></a>
+### Generate Multiple Files
+
+In order to generate multiple files, you have to specify multiple invocations of this plugin in the webpack 
+configuration, like this:
+
+```javascript
+module.exports = {
+    // ...
+    plugins: [
+        generate({
+            file: 'file-1.txt',
+            content: 'some content for file 1'
+        }),
+        generate({
+            file: 'file-2.txt',
+            content: 'some content for file 2'
+        })
+    ]
+};
+```
+
+Of course you can use all of the features described in previous examples for specifying the content.
 
 <a name="known-problems"></a>
 ## Known Problems
