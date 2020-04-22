@@ -17,6 +17,9 @@ General purpose Webpack plugin for generating files.
     * [content](#configuration--content)
     * [debug](#configuration--debug)
 * [Examples](#examples)
+    * [Copy File](#examples--copy-file)
+    * [Generate Application Info](#examples--generate-app-info)
+* [Known Problems](#known-problems)
 
 <a name="getting-started"></a>
 ## Getting Started
@@ -132,6 +135,7 @@ Flag, indicating if additional debug output should be logged.
 <a name="examples"></a>
 ## Examples
 
+<a name="examples--copy-file"></a>
 ### Copy File
 
 Given, you have a `file my-file.txt` in your `src` directory. Then you can copy that file into webpack's default output
@@ -152,3 +156,135 @@ module.exports = {
 };
 ```
 
+Note, that this plugin's intend is _not_ to replace the well known 
+[copy](https://github.com/webpack-contrib/copy-webpack-plugin) webpack plugin. In case you just want to copy over some
+file into webpack's output directory, you'll probably be better suited to use the copy-webpack-plugin, since it may be
+easier to use for this case.
+
+Nevertheless, this plugin got some features, that make it extremely useful in more complex scenarios as described in the 
+following examples.
+
+<a name="examples--generate-app-info"></a>
+### Generate Application Info
+
+Say, you want to generate some metadata information for your app, that is to served by a web server and displayed in 
+your application on demand, you can do it like this:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+const generate = require('generate-file-webpack-plugin');
+
+// Load package.json as object
+const appPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json')).toString());
+
+module.exports = {
+    // ...
+    plugins: [
+        generate({
+            file: 'app-info.js',
+            content: `const appInfo = {
+                name: "${appPackage.name}",
+                version: "${appPackage.version}"
+            }`
+        })
+    ]
+};
+```
+
+This will generate a file `app-info.js` with the name and the version of the app, that can be served and included by 
+your web application, using the following tag:
+
+```html
+<script type="text/javascript" language="javascript" src="app-info.js"></script>
+```
+
+Note, that this approach of specifying the content of the generated file as a (template) string has several drawbacks:
+* The `package.json` object is created as a global variable.
+* The content will be resolved as soon as the webpack configuration is loaded, and not at the time the 
+  plugin is actually executed. This is OK in this case, but there may be situations where referenced information is not 
+  available at the time the webpack configuration is being loaded.
+
+We can circumvent those issues by using a function as the content source for the generated file, like this:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+const generate = require('generate-file-webpack-plugin');
+
+module.exports = {
+    // ...
+    plugins: [
+        generate({
+            file: 'app-info.js',
+            content: () => {
+                const appPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json')).toString());
+                return `const appInfo = {
+                            name: "${appPackage.name}",
+                            version: "${appPackage.version}"
+                        }`
+            }
+        })
+    ]
+};
+```
+
+Note, that we used an anonymous arrow function in this case. We could have also used a named function declared in the
+webpack configuration, like this:
+
+```javascript
+module.exports = {
+   // ...
+    plugins: [
+        generate({
+            file: 'app-info.js',
+            content: generateAppInfo
+        })
+    ]
+};
+
+function generateAppInfo() {
+    const appPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json')).toString());
+    const lastCommitId = execSync('git rev-parse HEAD', {timeout: 1000}).toString().trim();
+    return `const appInfo = {
+                name: "${appPackage.name}",
+                version: "${appPackage.version}",
+                hash: "${lastCommitId}"
+            }`
+}
+```
+
+We can further enhance this example by not only using information from the `package.json`, but also from a different
+information source. It would be useful to add an unique identifier (called `hash` in this case) for the source code from
+which the application has been build. We use the latest Git commit ID for that in this example. This can be done like 
+this:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const generate = require('generate-file-webpack-plugin');
+
+module.exports = {
+    entry: path.resolve(__dirname, 'src/index.js'),
+    plugins: [
+        generate({
+            file: 'app-info.js',
+            content: () => {
+                const appPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json')).toString());
+                const lastCommitId = execSync('git rev-parse HEAD', {timeout: 1000}).toString().trim();
+                return `const appInfo = {
+                            name: "${appPackage.name}",
+                            version: "${appPackage.version}",
+                            hash: "${lastCommitId}"
+                        }`
+            }
+        })
+    ]
+};
+```
+
+<a name="known-problems"></a>
+## Known Problems
+
+None, yet.
