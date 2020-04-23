@@ -1,6 +1,6 @@
 {
   "name": "generate-file-webpack-plugin",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "General purpose Webpack plugin for generating files.",
   "main": "lib/index.js",
   "scripts": {
@@ -13,7 +13,21 @@
   },
   "author": "kflGALORE",
   "license": "MIT",
-  "keywords": ["webpack", "plugin", "webpack-plugin", "generate", "generator", "file", "files", "create", "creator", "generic", "general-purpose", "helper" ,"util"],
+  "keywords": [
+    "webpack",
+    "plugin",
+    "webpack-plugin",
+    "generate",
+    "generator",
+    "file",
+    "files",
+    "create",
+    "creator",
+    "generic",
+    "general-purpose",
+    "helper",
+    "util"
+  ],
   "devDependencies": {
     "@types/jest": "^25.1.4",
     "@types/rimraf": "^3.0.0",
