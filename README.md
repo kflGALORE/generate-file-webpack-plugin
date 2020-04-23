@@ -33,7 +33,7 @@ General purpose Webpack plugin for generating files.
   * Earlier version of Webpack probably won't work.
   * Latest version 5.x may work, but has not been tested.
   
-* Node.js 12.x
+* Node.js 10.x | 11.x | 12.x | 13.x
   * Earlier versions may also work, but have not been tested.
   * Later versions most probably also work, but have not been tested.
 
