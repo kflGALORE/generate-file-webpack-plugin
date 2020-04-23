@@ -19,6 +19,7 @@ General purpose Webpack plugin for generating files.
 * [Examples](#examples)
     * [Copy File](#examples--copy-file)
     * [Generate Application Info](#examples--generate-app-info)
+    * [Using Handlebars Templates](#examples--using-handlebars-templates)
     * [Generate Multiple Files](#examples--generate-multiple-files)
 * [Known Problems](#known-problems)
 
@@ -231,30 +232,8 @@ module.exports = {
 };
 ```
 
-Note, that we used an anonymous arrow function in this case. We could have also used a named function declared in the
-webpack configuration, like this:
-
-```javascript
-module.exports = {
-   // ...
-    plugins: [
-        generate({
-            file: 'app-info.js',
-            content: generateAppInfo
-        })
-    ]
-};
-
-function generateAppInfo() {
-    const appPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json')).toString());
-    const lastCommitId = execSync('git rev-parse HEAD', {timeout: 1000}).toString().trim();
-    return `const appInfo = {
-                name: "${appPackage.name}",
-                version: "${appPackage.version}",
-                hash: "${lastCommitId}"
-            }`
-}
-```
+Note, that we used an anonymous arrow function in this case. We could have also used a "regular" anonymous function, or
+a named function declared in the webpack configuration.
 
 We can further enhance this example by not only using information from the `package.json`, but also from a different
 information source. It would be useful to add an unique identifier (called `hash` in this case) for the source code from
@@ -286,6 +265,99 @@ module.exports = {
 };
 ```
 
+Just for readability, we can extract parsing of the `package.json` file and the retrieval of the latest Git commit ID
+into named functions declared in the webpack configuration. 
+
+Note: Calling functions from within a content function is allowed.
+
+```javascript
+module.exports = {
+    // ...
+    plugins: [
+        generate({
+            file: 'app-info.js',
+            content: () => {
+                const appPackage = parseAppPackage();
+                const lastCommitId = getLastCommitId();
+                return `const appInfo = {
+                            name: "${appPackage.name}",
+                            version: "${appPackage.version}",
+                            hash: "${lastCommitId}"
+                        }`
+            }
+        })
+    ]
+};
+
+function parseAppPackage() {
+    return JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json')).toString());
+}
+
+function getLastCommitId() {
+    return execSync('git rev-parse HEAD', {timeout: 1000}).toString().trim();
+}
+```
+
+<a name="examples--using-handlebars-templates"></a>
+### Using Handlebars Templates
+
+Picking up the [Generate Application Info](#examples--generate-app-info) example, we can also use the 
+[handlebars](https://handlebarsjs.com/) template engine for generating our `app-info.js` file (or any other file you 
+like).
+
+First, we have to install the `handlebars` npm package:
+
+```bash
+npm install handlebars --save-dev
+```
+
+Then, we have to create a handlebars template file, for generating our `app-info.js` file, for this example located in
+`src/app-info.hbs`:
+
+```hbs
+const appInfo = {
+    name: "{{appPackage.name}}",
+    version: "{{appPackage.version}}",
+    hash: "{{lastCommitId}}"
+}
+```
+
+Finally, we add the following to our webpack configuration:
+
+```javascript
+const handlebars = require('handlebars');
+const generate = require('generate-file-webpack-plugin');
+
+module.exports = {
+    // ...
+    plugins: [
+        generate({
+            file: 'app-info.js',
+            content: () => {
+                return template('src/app-info.hbs')({
+                    appPackage: parseAppPackage(),
+                    lastCommitId: getLastCommitId()
+                });
+            }
+        })
+    ]
+};
+
+function template(file) {
+    return handlebars.compile(fs.readFileSync(path.resolve(__dirname, file)).toString());
+}
+```
+
+Note, that for clarity we omitted the definition of the `parseAppPackage()` and `getLastCommitId()` functions. Have a look
+at the [Generate Application Info](#examples--generate-app-info) example if you need to know how they are implemented.
+
+Note, that we defined a (more or less) generic function `template(file)` for compiling our handlebars template file. We
+are not relying on the [handlebars-loader](https://github.com/pcardune/handlebars-loader) webpack loader, because the 
+webpack configuration setup for making this work would be too complex. Especially, we would have to defined an entry 
+point for the loader, and still could not ensure that our plugin gets executed _after_ the loader has done its work.
+In theory we could somehow make it work, but in reality this is just a configuration overkill that you should avoid.
+
+
 <a name="examples--generate-multiple-files"></a>
 ### Generate Multiple Files
 
@@ -313,4 +385,4 @@ Of course you can use all of the features described in previous examples for spe
 <a name="known-problems"></a>
 ## Known Problems
 
-None, yet.
+See [bugs](https://github.com/kflGALORE/generate-file-webpack-plugin/labels/bug)
