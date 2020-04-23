@@ -1,6 +1,8 @@
 tsconfig.json
 jest.config.js
 
+.github/
+
 *.iml
 .idea/
 
