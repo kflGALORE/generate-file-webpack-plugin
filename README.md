@@ -4,7 +4,6 @@
 [![dev-dependencies](https://david-dm.org/kflGALORE/generate-file-webpack-plugin/dev-status.svg)](https://david-dm.org/kflGALORE/generate-file-webpack-plugin#info=devDependencies)
 
 # generate-file-webpack-plugin
-**This is still work-in-progress. _Do not use, yet_**.
 
 General purpose Webpack plugin for generating files.
 
